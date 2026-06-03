@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>주문 조회 | MUSASHI GOLF</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#0071e3;--accent-hover:#0077ed;
+  --bg:#ffffff;--panel:#f5f5f7;--card:#ffffff;--line:#d2d2d7;--line-soft:#e8e8ed;
+  --text:#1d1d1f;--text2:#6e6e73;--green:#008009;--error:#e30000;
+  --radius:18px;--kakao:#FEE500;--kakao-text:#3C1E1E;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR','SF Pro KR',sans-serif;background:var(--bg);min-height:100vh;color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:650px;margin:0 auto;padding:24px 16px 48px}
+
+.page-header{text-align:center;margin-bottom:30px;padding-top:6px}
+.eyebrow{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.page-header h1{font-size:2.3rem;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1.12}
+.page-header h1 .accent{background:linear-gradient(90deg,#0071e3,#41a6ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.title-underline{width:54px;height:4px;border-radius:4px;background:linear-gradient(90deg,#0071e3,#64b5f6);margin:15px auto 0}
+.page-header .sub{color:var(--text2);font-size:.92rem;margin-top:13px}
+.status-pill{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:9px 18px;background:var(--panel);color:var(--text);border-radius:980px;text-decoration:none;font-size:.85rem;font-weight:600;transition:background .15s}
+.status-pill:hover{background:#ececf0}
+@media(min-width:768px){.page-header h1{font-size:2.7rem}}
+
+.card{background:var(--card);border:1px solid var(--line-soft);border-radius:var(--radius);padding:22px;box-shadow:0 2px 14px rgba(0,0,0,.05);margin-bottom:16px}
+.section-title{font-size:1.05rem;font-weight:700;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:8px;letter-spacing:-.01em}
+.section-title .icon{font-size:1.1rem}
+
+.form-row{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.form-row.two{flex-direction:row;gap:10px}
+.form-row.two .form-group{flex:1 1 0;min-width:0;width:0}
+.form-group{display:flex;flex-direction:column}
+.form-group label{font-size:.82rem;font-weight:600;margin-bottom:6px}
+.form-group input{font-family:inherit;font-size:16px;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);outline:none;width:100%;-webkit-appearance:none;appearance:none;transition:border-color .15s,box-shadow .15s}
+.form-group input::placeholder{color:#aeaeb2}
+.form-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.15)}
+
+.btn-search{width:100%;padding:15px;background:var(--accent);color:#fff;border:none;border-radius:980px;font-size:1rem;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-search:hover{background:var(--accent-hover)}
+.btn-search:disabled{opacity:.5}
+
+.loading{text-align:center;padding:36px 20px;display:none}
+.loading.active{display:block}
+.loading-spinner{width:34px;height:34px;border:3px solid var(--line-soft);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+.loading p{color:var(--text2);font-size:.9rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.result-section{display:none}
+.result-section.active{display:block}
+
+.order-card{padding:0;overflow:hidden}
+.order-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--panel);flex-wrap:wrap;gap:6px}
+.order-number{font-size:.95rem;font-weight:700;letter-spacing:-.01em}
+.order-date{font-size:.78rem;color:var(--text2)}
+.order-body{padding:20px}
+.order-info-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;font-size:.88rem;border-bottom:1px solid var(--line-soft)}
+.order-info-row:last-of-type{border-bottom:none}
+.order-info-row .label{color:var(--text2);flex:0 0 auto}
+.order-info-row .value{font-weight:600;text-align:right;word-break:break-all}
+.badge-status{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:600}
+
+.status-tracker{margin-top:20px;padding-top:18px;border-top:1px solid var(--line-soft)}
+.status-tracker h4{font-size:.9rem;font-weight:600;margin-bottom:18px}
+.status-steps{display:flex;justify-content:space-between;position:relative}
+.status-steps::before{content:'';position:absolute;top:18px;left:10%;right:10%;height:2px;background:var(--line);z-index:0}
+.status-progress-fill{position:absolute;top:18px;left:10%;height:2px;background:var(--accent);z-index:1;transition:width .4s ease}
+.status-step{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:2;flex:1}
+.step-icon{width:38px;height:38px;border-radius:50%;background:var(--card);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--text2)}
+.step-label{font-size:.68rem;color:var(--text2);text-align:center;font-weight:500}
+.status-step.completed .step-icon{background:var(--accent);border-color:var(--accent);color:#fff}
+.status-step.completed .step-label{color:var(--text)}
+.status-step.active .step-icon{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px rgba(0,113,227,.18)}
+.status-step.active .step-label{color:var(--accent);font-weight:700}
+
+.tracking-info{margin-top:18px;padding:14px 16px;background:var(--panel);border-radius:12px}
+.tracking-info h5{font-size:.78rem;color:var(--text2);margin-bottom:8px;font-weight:600}
+.tracking-number{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:'SF Mono',ui-monospace,monospace;font-size:.9rem;font-weight:600}
+.tracking-number a{margin-left:auto;color:var(--accent);text-decoration:none;font-family:-apple-system,'Noto Sans KR',sans-serif;font-size:.82rem;font-weight:600}
+
+.empty-state,.no-result{text-align:center;padding:36px 20px}
+.empty-icon,.no-result .icon{font-size:2.6rem;margin-bottom:12px}
+.no-result h3{font-size:1.05rem;margin-bottom:6px}
+.empty-msg,.no-result p{color:var(--text2);font-size:.88rem}
+
+.kakao-banner{display:flex;align-items:center;gap:14px;background:var(--kakao);border-radius:16px;padding:16px 18px;margin-top:20px;cursor:pointer;text-decoration:none}
+.kakao-banner .k-icon{font-size:1.6rem;flex:0 0 auto}
+.kakao-banner .k-text{flex:1;color:var(--kakao-text)}
+.kakao-banner .k-text strong{display:block;font-size:.95rem;font-weight:700}
+.kakao-banner .k-text span{font-size:.78rem;opacity:.8}
+.kakao-banner .k-go{color:var(--kakao-text);font-weight:700;font-size:.85rem;white-space:nowrap}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(40,40,42,.95);color:#fff;padding:13px 24px;border-radius:980px;font-size:.86rem;z-index:4000;display:none;max-width:90%;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+
+@media(min-width:768px){.wrap{padding:48px 20px}}
+@media(max-width:480px){
+  .kakao-banner{flex-wrap:wrap}
+  .kakao-banner .k-go{width:100%;text-align:right}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-header">
+    <span class="eyebrow">Order Status</span>
+    <h1>주문 <span class="accent">조회</span></h1>
+    <div class="title-underline"></div>
+    <p class="sub">주문 상태 및 배송 현황 확인</p>
+    <a class="status-pill" href="index.html">🛒 주문하기</a>
+  </div>
+
+  <div class="card">
+    <div class="section-title"><span class="icon">🔍</span>주문 조회</div>
+    <div class="form-row two">
+      <div class="form-group"><label>주문자 이름</label><input type="text" id="searchName" placeholder="홍길동"></div>
+      <div class="form-group"><label>전화번호</label><input type="tel" id="searchPhone" inputmode="tel" placeholder="010-0000-0000" maxlength="13" oninput="formatPhone(this)"></div>
+    </div>
+    <button class="btn-search" id="btnSearch" onclick="searchOrder()">주문 조회하기</button>
+  </div>
+
+  <div class="card loading" id="loading">
+    <div class="loading-spinner"></div>
+    <p>조회 중...</p>
+  </div>
+
+  <div class="result-section" id="result"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ⚙️ 주문서(index.html)와 동일한 메인/백업 서버 URL
+var SHEET_URL  = 'https://script.google.com/macros/s/AKfycbxqaaD-AQuCUPU3oONazwzjXRhKU0jjVqmq8Lcrk-da73VlNsoFbqi8skJSI8fQRvSHQg/exec';
+var BACKUP_URL = 'https://script.google.com/macros/s/AKfycbxqaaD-AQuCUPU3oONazwzjXRhKU0jjVqmq8Lcrk-da73VlNsoFbqi8skJSI8fQRvSHQg/exec';
+
+// 배송 단계 정의 (백엔드 status 값 → 단계 매핑)
+var STATUS_LABELS = ['주문접수', '입금확인', '배송준비', '발송완료', '배송완료'];
+var STATUS_MAP = {
+  '주문접수':{step:0,icon:'📝'}, '주문확인':{step:0,icon:'📝'}, '확인중':{step:0,icon:'📝'},
+  '입금확인':{step:1,icon:'✅'}, '결제완료':{step:1,icon:'✅'},
+  '배송준비':{step:2,icon:'📦'}, '상품준비':{step:2,icon:'📦'},
+  '발송완료':{step:3,icon:'🚚'}, '배송중':{step:3,icon:'🚚'},
+  '배송완료':{step:4,icon:'🎉'}, '완료':{step:4,icon:'🎉'}
+};
+var STATUS_COLORS = {
+  '주문접수':'#6e6e73','확인중':'#6e6e73','주문확인':'#6e6e73',
+  '입금확인':'#0071e3','결제완료':'#0071e3',
+  '배송준비':'#9a5b00','상품준비':'#9a5b00',
+  '발송완료':'#0071e3','배송중':'#0071e3',
+  '배송완료':'#008009','완료':'#008009','취소':'#e30000'
+};
+
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(function(){t.style.display='none';},3000);}
+
+function formatPhone(input){
+  var num=input.value.replace(/[^0-9]/g,'');
+  if(num.length<=3)input.value=num;
+  else if(num.length<=7)input.value=num.slice(0,3)+'-'+num.slice(3);
+  else input.value=num.slice(0,3)+'-'+num.slice(3,7)+'-'+num.slice(7,11);
+}
+
+function setLoading(on){document.getElementById('loading').classList.toggle('active',on);if(on){var r=document.getElementById('result');r.classList.remove('active');r.innerHTML='';}}
+
+var searchState=null;
+
+function searchOrder(){
+  var name=document.getElementById('searchName').value.trim();
+  var phone=document.getElementById('searchPhone').value.trim();
+  if(!name||!phone){toast('이름과 전화번호를 입력해주세요');return;}
+
+  document.getElementById('btnSearch').disabled=true;
+  setLoading(true);
+  searchState={done:false, servers:[SHEET_URL,BACKUP_URL], idx:0, name:name, phone:phone};
+  trySearchNext();
+}
+
+function trySearchNext(){
+  if(!searchState||searchState.done)return;
+  if(searchState.idx>=searchState.servers.length){finishSearch(null);return;}
+  var url=searchState.servers[searchState.idx++];
+  var cb='scb_'+Date.now()+'_'+Math.floor(Math.random()*10000);
+  window[cb]=function(result){onSearchResult(result,cb);};
+  var s=document.createElement('script');
+  s.src=url+'?action=search&name='+encodeURIComponent(searchState.name)+'&phone='+encodeURIComponent(searchState.phone)+'&callback='+cb+'&_t='+Date.now();
+  s.onerror=function(){if(window[cb]){try{delete window[cb];}catch(e){}trySearchNext();}};
+  document.body.appendChild(s);
+  setTimeout(function(){if(window[cb]){try{delete window[cb];}catch(e){}trySearchNext();}},12000);
+}
+
+function onSearchResult(result,cb){
+  try{delete window[cb];}catch(e){}
+  if(!searchState||searchState.done)return;
+  if(result&&result.success&&result.orders&&result.orders.length>0){
+    finishSearch(result.orders);return;
+  }
+  // 성공했지만 결과 없음 / 실패 → 다음 서버 시도, 없으면 결과없음
+  if(searchState.idx<searchState.servers.length){trySearchNext();}
+  else{finishSearch(null);}
+}
+
+function finishSearch(orders){
+  if(searchState)searchState.done=true;
+  setLoading(false);
+  document.getElementById('btnSearch').disabled=false;
+  if(orders&&orders.length>0){renderOrders(orders);return;}
+  // 백엔드 조회 실패 시 localStorage 마지막 주문으로 폴백
+  try{
+    var last=localStorage.getItem('lastGolfOrder');
+    if(last){
+      var o=JSON.parse(last);
+      if(o.ordererName===searchState.name && o.ordererPhone===searchState.phone){
+        renderOrders([{orderNumber:o.orderNumber,timestamp:o.timestamp,status:'주문접수',items:o.items,orderQty:o.orderQty,payAmount:o.payAmount}]);
+        return;
+      }
+    }
+  }catch(e){}
+  renderNoResult();
+}
+
+function g(o){for(var i=1;i<arguments.length;i++){var k=arguments[i];if(o[k]!==undefined&&o[k]!==null&&o[k]!=='')return o[k];}return '';}
+
+function formatDate(d){
+  if(!d)return '-';
+  try{var dt=new Date(d);if(isNaN(dt.getTime()))return String(d);
+    return dt.getFullYear()+'.'+String(dt.getMonth()+1).padStart(2,'0')+'.'+String(dt.getDate()).padStart(2,'0');
+  }catch(e){return String(d);}
+}
+
+function createOrderCard(order){
+  var status=g(order,'status')||'주문접수';
+  var info=STATUS_MAP[status]||STATUS_MAP['주문접수'];
+  var currentStep=info.step;
+  var color=STATUS_COLORS[status]||'#6e6e73';
+  var progressWidth=currentStep<=0?0:(currentStep/(STATUS_LABELS.length-1))*80;
+
+  var steps=STATUS_LABELS.map(function(label,idx){
+    var c='';if(idx<currentStep)c='completed';else if(idx===currentStep)c='active';
+    var icon=(STATUS_MAP[label]&&STATUS_MAP[label].icon)||'⭕';
+    return '<div class="status-step '+c+'"><div class="step-icon">'+icon+'</div><div class="step-label">'+label+'</div></div>';
+  }).join('');
+
+  var items=g(order,'items','productName','product');
+  var qty=g(order,'orderQty','qty');
+  var itemsDisplay=items?items:(qty?(qty+'개'):'-');
+  var amount=g(order,'payAmount','amount');
+  var receiver=g(order,'receiverName','receiver');
+  var addr=g(order,'addr','address');
+  var addrDetail=g(order,'addrDetail');
+  var addrFull=(addr?addr:'')+(addrDetail?(' '+addrDetail):'');
+  var tn=String(g(order,'trackingNumber','tracking')||'').trim();
+  var courier=g(order,'courier');
+
+  var trackingHTML='';
+  if(courier==='직접전달'||tn==='직접전달'){
+    trackingHTML='<div class="tracking-info"><h5>배송 방식</h5><div class="tracking-number">직접 전달</div></div>';
+  }else if(tn&&tn!=='0'&&tn!=='undefined'){
+    trackingHTML='<div class="tracking-info"><h5>운송장 번호</h5><div class="tracking-number">'+tn+
+      '<a href="https://trace.cjlogistics.com/web/detail.jsp?slipno='+encodeURIComponent(tn)+'" target="_blank" rel="noopener">배송조회 →</a></div></div>';
+  }
+
+  return '<div class="card order-card">'+
+    '<div class="order-header"><span class="order-number">'+(g(order,'orderNumber','orderNo')||'ORN-'+Date.now())+'</span><span class="order-date">'+formatDate(g(order,'timestamp','payDate','createdAt'))+'</span></div>'+
+    '<div class="order-body">'+
+      '<div class="order-info-row"><span class="label">주문 상태</span><span class="value"><span class="badge-status" style="background:'+color+'1a;color:'+color+'">'+status+'</span></span></div>'+
+      '<div class="order-info-row"><span class="label">주문 상품</span><span class="value">'+itemsDisplay+'</span></div>'+
+      '<div class="order-info-row"><span class="label">송금 금액</span><span class="value">'+(amount||'-')+' USDT</span></div>'+
+      (receiver?'<div class="order-info-row"><span class="label">수령인</span><span class="value">'+receiver+'</span></div>':'')+
+      '<div class="order-info-row"><span class="label">배송지</span><span class="value">'+(addrFull||'-')+'</span></div>'+
+      '<div class="status-tracker"><h4>📍 배송 진행 상황</h4><div class="status-steps"><div class="status-progress-fill" style="width:'+progressWidth+'%"></div>'+steps+'</div></div>'+
+      trackingHTML+
+    '</div></div>';
+}
+
+function renderOrders(orders){
+  var sec=document.getElementById('result');
+  sec.innerHTML=orders.map(createOrderCard).join('')+kakaoBanner();
+  sec.classList.add('active');
+}
+
+function renderNoResult(){
+  var sec=document.getElementById('result');
+  sec.innerHTML='<div class="card"><div class="no-result"><div class="icon">😢</div><h3>주문 내역이 없습니다</h3><p>이름과 전화번호를 다시 확인해주세요.</p></div></div>'+kakaoBanner();
+  sec.classList.add('active');
+}
+
+function kakaoBanner(){
+  return '<a href="http://pf.kakao.com/_gcNxbX/chat" target="_blank" rel="noopener" class="kakao-banner">'+
+    '<span class="k-icon">💬</span><span class="k-text"><strong>문의사항이 있으신가요?</strong><span>카카오톡으로 빠르게 답변드려요</span></span>'+
+    '<span class="k-go">카카오톡 상담 →</span></a>';
+}
+
+// 마지막 주문 정보 자동 입력
+document.addEventListener('DOMContentLoaded', function(){
+  try{
+    var last=localStorage.getItem('lastGolfOrder');
+    if(last){
+      var o=JSON.parse(last);
+      if(o.ordererName)document.getElementById('searchName').value=o.ordererName;
+      if(o.ordererPhone)document.getElementById('searchPhone').value=o.ordererPhone;
+    }
+  }catch(e){}
+});
+
+['searchName','searchPhone'].forEach(function(id){
+  document.getElementById(id).addEventListener('keypress',function(e){if(e.key==='Enter')searchOrder();});
+});
+</script>
+</body>
+</html>
